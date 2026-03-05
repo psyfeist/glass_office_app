@@ -1,12 +1,15 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session
 from database import db
-from models import Job
+from models import Job, User
 from datetime import datetime
+from flask import abort
 import os
 
 
 def create_app():
     app = Flask(__name__)
+
+    app.config["SECRET_KEY"] = "super-secret-key"
 
     # Absolute path to database file
     basedir = os.path.abspath(os.path.dirname(__file__))
@@ -19,6 +22,17 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+
+    # --------------------
+    # Global Login Guard
+    # --------------------
+    @app.before_request
+    def require_login():
+        allowed_routes = ["login", "create_admin", "static"]
+
+        if request.endpoint not in allowed_routes:
+            if "user_id" not in session:
+                return redirect(url_for("login"))
 
     # --------------------
     # Home Page
@@ -42,12 +56,13 @@ def create_app():
     def job_detail(job_id):
         job = Job.query.get_or_404(job_id)
         return render_template("job_detail.html", job=job)
-    
+
     # --------------------
     # Add Job Note
     # --------------------
     @app.route("/jobs/<int:job_id>/notes", methods=["POST"])
     def add_job_note(job_id):
+
         job = Job.query.get_or_404(job_id)
 
         content = request.form.get("content")
@@ -57,7 +72,7 @@ def create_app():
 
             note = JobNote(
                 job_id=job.id,
-                user_id=1,  # Temporary placeholder (we'll add real users later)
+                user_id=session["user_id"],
                 note_type="general",
                 content=content
             )
@@ -72,10 +87,14 @@ def create_app():
     # --------------------
     @app.route("/jobs/new", methods=["GET", "POST"])
     def create_job():
+
+        if session.get("user_role") != "admin":
+            abort(403)
+
         if request.method == "POST":
 
-            # Handle optional install date
             install_date_str = request.form.get("install_date")
+
             if install_date_str:
                 install_date_obj = datetime.strptime(
                     install_date_str, "%Y-%m-%d"
@@ -106,14 +125,76 @@ def create_app():
     # --------------------
     @app.route("/jobs/<int:job_id>/status", methods=["POST"])
     def update_job_status(job_id):
+
         job = Job.query.get_or_404(job_id)
 
         new_status = request.form.get("status")
+
         if new_status:
             job.status = new_status
             db.session.commit()
 
         return redirect(url_for("job_detail", job_id=job.id))
+
+    # --------------------
+    # Create Admin User (temporary)
+    # --------------------
+    @app.route("/create-admin")
+    def create_admin():
+
+        existing = User.query.filter_by(email="admin@glass.local").first()
+
+        if existing:
+            return "Admin already exists"
+
+        admin = User(
+            name="Admin",
+            email="admin@glass.local",
+            role="admin",
+            active=True
+        )
+
+        admin.set_password("admin123")
+
+        db.session.add(admin)
+        db.session.commit()
+
+        return "Admin user created"
+
+    # --------------------
+    # Login
+    # --------------------
+    @app.route("/login", methods=["GET", "POST"])
+    def login():
+
+        if request.method == "POST":
+
+            email = request.form.get("email")
+            password = request.form.get("password")
+
+            user = User.query.filter_by(email=email).first()
+
+            if user and user.check_password(password):
+
+                session["user_id"] = user.id
+                session["user_name"] = user.name
+                session["user_role"] = user.role
+
+                return redirect(url_for("home"))
+
+            return "Invalid email or password"
+
+        return render_template("login.html")
+
+    # --------------------
+    # Logout
+    # --------------------
+    @app.route("/logout")
+    def logout():
+
+        session.clear()
+
+        return redirect(url_for("login"))
 
     return app
 

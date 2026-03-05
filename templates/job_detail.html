@@ -62,7 +62,9 @@
     {% for note in job.notes %}
         <div class="card">
             <p>{{ note.content }}</p>
-            <small>{{ note.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+            <small>{{ note.created_at.strftime("%Y-%m-%d %H:%M") }}
+                by {{ note.author.name }}
+            </small>
         </div>
     {% endfor %}
 {% else %}

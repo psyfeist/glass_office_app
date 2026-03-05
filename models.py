@@ -1,3 +1,4 @@
+from werkzeug.security import generate_password_hash, check_password_hash
 from database import db
 from datetime import datetime
 
@@ -9,8 +10,15 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False)
     active = db.Column(db.Boolean, default=True)
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 
 class Job(db.Model):
@@ -45,6 +53,7 @@ class JobNote(db.Model):
     note_type = db.Column(db.String(50))
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    author = db.relationship("User")
 
 
 class JobPhoto(db.Model):

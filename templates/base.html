@@ -36,6 +36,14 @@
         <a href="/">Home</a>
         <a href="/jobs">Jobs</a>
         <a href="/jobs/new">Create Job</a>
+
+        {% if session.get("user_name") %}
+        <span style="margin-left:20px;">
+        Logged in as: {{ session["user_name"] }}
+        </span>
+
+        <a href="/logout" style="margin-left:10px;">Logout</a>
+        {% endif %}
     </div>
 
     <hr>
