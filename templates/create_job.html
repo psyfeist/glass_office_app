@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Create Job{% endblock %}
+
+{% block content %}
+
+<h2>Create New Job</h2>
+
+<form method="POST">
+    <div class="card">
+
+        <p>
+            <label>Customer Name:</label><br>
+            <input type="text" name="customer_name" required>
+        </p>
+
+        <p>
+            <label>Address:</label><br>
+            <input type="text" name="address" required>
+        </p>
+
+        <p>
+            <label>Contact Info:</label><br>
+            <input type="text" name="contact_info">
+        </p>
+
+        <p>
+            <label>Job Type:</label><br>
+            <select name="job_type" required>
+                <option value="residential">Residential</option>
+                <option value="commercial">Commercial</option>
+            </select>
+        </p>
+
+        <p>
+            <label>Job Category:</label><br>
+            <input type="text" name="job_category">
+        </p>
+
+        <p>
+            <label>Install Date:</label><br>
+            <input type="date" name="install_date">
+        </p>
+
+        <p>
+            <label>Status:</label><br>
+            <select name="status" required>
+                <option value="to_be_scheduled">To Be Scheduled</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="on_site">On Site</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+                <option value="needs_return_visit">Needs Return Visit</option>
+            </select>
+        </p>
+
+        <p>
+            <label>Scope of Work:</label><br>
+            <textarea name="scope_of_work" rows="4"></textarea>
+        </p>
+
+        <button type="submit">Create Job</button>
+
+    </div>
+</form>
+
+{% endblock %}

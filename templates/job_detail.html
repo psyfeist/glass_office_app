@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Job Details{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <h2>{{ job.customer_name }}</h2>
+    <p><strong>Address:</strong> {{ job.address }}</p>
+    <p><strong>Contact Info:</strong> {{ job.contact_info }}</p>
+    <p><strong>Job Type:</strong> {{ job.job_type }}</p>
+    <p><strong>Category:</strong> {{ job.job_category }}</p>
+    <p><strong>Status:</strong> {{ job.status.replace('_', ' ').title() }}</p>
+
+<form method="POST" action="/jobs/{{ job.id }}/status">
+    <div class="card" style="margin-top:20px;">
+        <label>Update Status:</label><br>
+        <select name="status">
+    <option value="to_be_scheduled"
+        {% if job.status == "to_be_scheduled" %}selected{% endif %}>
+        To Be Scheduled
+    </option>
+
+    <option value="scheduled"
+        {% if job.status == "scheduled" %}selected{% endif %}>
+        Scheduled
+    </option>
+
+    <option value="on_site"
+        {% if job.status == "on_site" %}selected{% endif %}>
+        On Site
+    </option>
+
+    <option value="in_progress"
+        {% if job.status == "in_progress" %}selected{% endif %}>
+        In Progress
+    </option>
+
+    <option value="completed"
+        {% if job.status == "completed" %}selected{% endif %}>
+        Completed
+    </option>
+
+    <option value="needs_return_visit"
+        {% if job.status == "needs_return_visit" %}selected{% endif %}>
+        Needs Return Visit
+    </option>
+</select>
+
+        <br><br>
+        <button type="submit">Save Status</button>
+    </div>
+</form>
+    <p><strong>Scope of Work:</strong></p>
+    <p>{{ job.scope_of_work }}</p>
+</div>
+
+<hr>
+<h3>Notes</h3>
+
+{% if job.notes %}
+    {% for note in job.notes %}
+        <div class="card">
+            <p>{{ note.content }}</p>
+            <small>{{ note.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No notes yet.</p>
+{% endif %}
+
+<div class="card">
+    <form method="POST" action="/jobs/{{ job.id }}/notes">
+        <label>Add Note:</label><br>
+        <textarea name="content" rows="4" required></textarea><br><br>
+        <button type="submit">Add Note</button>
+    </form>
+</div>
+
+<a href="/jobs">← Back to Job List</a>
+
+{% endblock %}
