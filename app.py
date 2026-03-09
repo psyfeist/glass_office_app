@@ -161,6 +161,7 @@ def create_app():
 
         return "Admin user created"
 
+
     # --------------------
     # Login
     # --------------------
