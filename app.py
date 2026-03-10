@@ -66,7 +66,22 @@ def create_app():
     # --------------------
     @app.route("/jobs/<int:job_id>")
     def job_detail(job_id):
+
         job = Job.query.get_or_404(job_id)
+
+        # If installer, verify assignment
+        if session.get("user_role") == "installer":
+
+            user_id = session.get("user_id")
+
+            assignment = JobAssignment.query.filter_by(
+                job_id=job.id,
+                user_id=user_id
+            ).first()
+
+            if not assignment:
+                abort(403)
+
         return render_template("job_detail.html", job=job)
 
     # --------------------
@@ -230,4 +245,4 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

@@ -15,6 +15,13 @@
 </h3>
         <p><strong>Address:</strong> {{ job.address }}</p>
         <p><strong>Status:</strong> {{ job.status.replace('_', ' ').title() }}</p>
+        <p><strong>Installers:</strong>
+        {% for assignment in job.assignments %}
+            {{ assignment.user.name }}{% if not loop.last %}, {% endif %}
+        {% else %}
+            None
+        {% endfor %}
+        </p>
     </div>
 {% endfor %}
 
