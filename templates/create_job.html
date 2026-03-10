@@ -42,6 +42,16 @@
             <input type="date" name="install_date">
         </p>
 
+        <label>Assign Installers</label>
+
+        <select name="installers" multiple>
+            {% for installer in installers %}
+                <option value="{{ installer.id }}">
+                    {{ installer.name }}
+                </option>
+            {% endfor %}
+        </select>
+
         <p>
             <label>Status:</label><br>
             <select name="status" required>

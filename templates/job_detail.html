@@ -12,6 +12,15 @@
     <p><strong>Category:</strong> {{ job.job_category }}</p>
     <p><strong>Status:</strong> {{ job.status.replace('_', ' ').title() }}</p>
 
+    <p><strong>Assigned Installers:</strong></p>
+    <ul>
+        {% for assignment in job.assignments %}
+            <li>{{ assignment.user.name }}</li>
+        {% else %}
+            <li>No installers assigned</li>
+        {% endfor %}
+    </ul>
+
 <form method="POST" action="/jobs/{{ job.id }}/status">
     <div class="card" style="margin-top:20px;">
         <label>Update Status:</label><br>
@@ -51,6 +60,7 @@
         <button type="submit">Save Status</button>
     </div>
 </form>
+
     <p><strong>Scope of Work:</strong></p>
     <p>{{ job.scope_of_work }}</p>
 </div>

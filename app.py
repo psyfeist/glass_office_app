@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from database import db
-from models import Job, User
+from models import Job, User, JobAssignment
 from datetime import datetime
 from flask import abort
 import os
@@ -46,7 +46,19 @@ def create_app():
     # --------------------
     @app.route("/jobs")
     def list_jobs():
-        jobs = Job.query.all()
+        if session.get("user_role") == "admin":
+            jobs = Job.query.all()
+
+        else:
+            user_id = session.get("user_id")
+
+            jobs = (
+                db.session.query(Job)
+                .join(JobAssignment)
+                .filter(JobAssignment.user_id == user_id)
+                .all()
+            )
+
         return render_template("jobs.html", jobs=jobs)
 
     # --------------------
@@ -87,6 +99,7 @@ def create_app():
     # --------------------
     @app.route("/jobs/new", methods=["GET", "POST"])
     def create_job():
+        installers = User.query.filter_by(role="installer", active=True).all()
 
         if session.get("user_role") != "admin":
             abort(403)
@@ -94,6 +107,8 @@ def create_app():
         if request.method == "POST":
 
             install_date_str = request.form.get("install_date")
+            installer_ids = request.form.getlist("installers")
+
 
             if install_date_str:
                 install_date_obj = datetime.strptime(
@@ -116,9 +131,22 @@ def create_app():
             db.session.add(job)
             db.session.commit()
 
+            from models import JobAssignment
+            for installer_id in installer_ids:
+                assignment = JobAssignment(
+                    job_id=job.id,
+                    user_id=installer_id,
+                    role="Installer"
+                )
+
+                db.session.add(assignment)
+
+            db.session.commit()
+
+
             return redirect(url_for("list_jobs"))
 
-        return render_template("create_job.html")
+        return render_template("create_job.html", installers=installers)
 
     # --------------------
     # Update Job Status

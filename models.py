@@ -10,6 +10,12 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False)
     active = db.Column(db.Boolean, default=True)
+    assignments = db.relationship(
+        "JobAssignment",
+        backref="user",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -32,6 +38,12 @@ class Job(db.Model):
     install_date = db.Column(db.Date)
     status = db.Column(db.String(50), default="scheduled")
     notes = db.relationship("JobNote", backref="job", lazy=True)
+    assignments = db.relationship(
+        "JobAssignment",
+        backref="job",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
 
     created_by = db.Column(db.Integer, db.ForeignKey("user.id"))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
