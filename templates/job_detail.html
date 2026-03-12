@@ -81,6 +81,27 @@
     <p>No notes yet.</p>
 {% endif %}
 
+<hr>
+<h3>Upload Photo</h3>
+
+<form method="POST" action="/jobs/{{ job.id }}/upload_photo" enctype="multipart/form-data">
+    <input type="file" name="photo" accept="image/*">
+    <button type="submit">Upload Photo</button>
+</form>
+
+<hr>
+<h3>Photos</h3>
+
+{% if job.photos %}
+    {% for photo in job.photos %}
+        <div class="card">
+            <img src="{{ url_for('uploaded_file', filename=photo.file_path) }}" style="max-width:300px;">
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No photos uploaded yet.</p>
+{% endif %}
+
 <div class="card">
     <form method="POST" action="/jobs/{{ job.id }}/notes">
         <label>Add Note:</label><br>

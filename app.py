@@ -4,6 +4,14 @@ from models import Job, User, JobAssignment
 from datetime import datetime
 from flask import abort
 import os
+from werkzeug.utils import secure_filename
+from flask import send_from_directory
+
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 
 def create_app():
@@ -17,6 +25,9 @@ def create_app():
 
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    app.config["UPLOAD_FOLDER"] = os.path.join(os.getcwd(), "uploads")
+    app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 
     db.init_app(app)
 
@@ -83,6 +94,42 @@ def create_app():
                 abort(403)
 
         return render_template("job_detail.html", job=job)
+    
+    @app.route("/jobs/<int:job_id>/upload_photo", methods=["POST"])
+    def upload_photo(job_id):
+
+        job = Job.query.get_or_404(job_id)
+
+        if "photo" not in request.files:
+            return redirect(url_for("job_detail", job_id=job.id))
+
+        file = request.files["photo"]
+
+        if file.filename == "":
+            return redirect(url_for("job_detail", job_id=job.id))
+
+        if file and allowed_file(file.filename):
+
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            file.save(filepath)
+
+            from models import JobPhoto
+
+            photo = JobPhoto(
+                job_id=job.id,
+                uploaded_by=session["user_id"],
+                file_path=filename
+            )
+
+            db.session.add(photo)
+            db.session.commit()
+
+        return redirect(url_for("job_detail", job_id=job.id))
+
+    @app.route("/uploads/<filename>")
+    def uploaded_file(filename):
+        return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
     # --------------------
     # Add Job Note

@@ -44,6 +44,12 @@ class Job(db.Model):
         lazy=True,
         cascade="all, delete-orphan"
     )
+    photos = db.relationship(
+        "JobPhoto",
+        backref="job",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
 
     created_by = db.Column(db.Integer, db.ForeignKey("user.id"))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
