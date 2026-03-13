@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from database import db
 from models import Job, User, JobAssignment
 from datetime import datetime
@@ -101,29 +101,35 @@ def create_app():
         job = Job.query.get_or_404(job_id)
 
         if "photo" not in request.files:
+            flash("No photo uploaded.")
             return redirect(url_for("job_detail", job_id=job.id))
 
         file = request.files["photo"]
 
         if file.filename == "":
+            flash("No file selected.")
             return redirect(url_for("job_detail", job_id=job.id))
 
-        if file and allowed_file(file.filename):
+        if not allowed_file(file.filename):
+            flash("Unsupported file type. Please upload JPG or PNG images.")
+            return redirect(url_for("job_detail", job_id=job.id))
 
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-            file.save(filepath)
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        file.save(filepath)
 
-            from models import JobPhoto
+        from models import JobPhoto
 
-            photo = JobPhoto(
-                job_id=job.id,
-                uploaded_by=session["user_id"],
-                file_path=filename
-            )
+        photo = JobPhoto(
+            job_id=job.id,
+            uploaded_by=session["user_id"],
+            file_path=filename
+        )
 
-            db.session.add(photo)
-            db.session.commit()
+        db.session.add(photo)
+        db.session.commit()
+
+        flash("Photo uploaded successfully.")
 
         return redirect(url_for("job_detail", job_id=job.id))
 

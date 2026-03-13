@@ -1,54 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>{% block title %}Glass Office{% endblock %}</title>
+
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 40px;
-            background-color: #f4f6f8;
+            background: #f5f5f5;
         }
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        h1 {
-            margin-bottom: 10px;
-        }
-        .nav {
+
+        nav {
             margin-bottom: 20px;
         }
-        .nav a {
+
+        nav a {
             margin-right: 15px;
             text-decoration: none;
             font-weight: bold;
+            color: #333;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .flash {
+            background: #ffe6e6;
+            border: 1px solid #ff9999;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+        }
+
+        .success {
+            background: #e6ffe6;
+            border: 1px solid #99cc99;
         }
     </style>
 </head>
+
 <body>
 
-    <h1>Glass Office System</h1>
+<nav>
+    <a href="{{ url_for('home') }}">Home</a>
+    <a href="{{ url_for('list_jobs') }}">Jobs</a>
 
-    <div class="nav">
-        <a href="/">Home</a>
-        <a href="/jobs">Jobs</a>
-        <a href="/jobs/new">Create Job</a>
+    {% if session.get("user_role") == "admin" %}
+        <a href="{{ url_for('create_job') }}">Create Job</a>
+    {% endif %}
 
-        {% if session.get("user_name") %}
+    {% if session.get("user_name") %}
         <span style="margin-left:20px;">
-        Logged in as: {{ session["user_name"] }}
+            Logged in as <strong>{{ session.get("user_name") }}</strong>
         </span>
+        <a href="{{ url_for('logout') }}" style="margin-left:10px;">Logout</a>
+    {% endif %}
+</nav>
 
-        <a href="/logout" style="margin-left:10px;">Logout</a>
-        {% endif %}
-    </div>
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="flash card">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
 
-    <hr>
-
-    {% block content %}{% endblock %}
+{% block content %}
+{% endblock %}
 
 </body>
 </html>
