@@ -81,6 +81,8 @@ class JobPhoto(db.Model):
     photo_type = db.Column(db.String(50))
     file_path = db.Column(db.String(300), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    uploader = db.relationship("User")
 
 
 class JobFile(db.Model):

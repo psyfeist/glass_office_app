@@ -1,11 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from database import db
-from models import Job, User, JobAssignment
+from models import Job, User, JobAssignment, JobPhoto
 from datetime import datetime
 from flask import abort
 import os
 from werkzeug.utils import secure_filename
 from flask import send_from_directory
+import uuid
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
 
@@ -93,8 +94,13 @@ def create_app():
             if not assignment:
                 abort(403)
 
-        return render_template("job_detail.html", job=job)
+        user = User.query.get(session["user_id"])
+
+        return render_template("job_detail.html", job=job, user=user)
     
+    #--------------
+    # Photo Upload Route
+    #--------------
     @app.route("/jobs/<int:job_id>/upload_photo", methods=["POST"])
     def upload_photo(job_id):
 
@@ -114,8 +120,13 @@ def create_app():
             flash("Unsupported file type. Please upload JPG or PNG images.")
             return redirect(url_for("job_detail", job_id=job.id))
 
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        original_filename = secure_filename(file.filename)
+        extension = os.path.splitext(original_filename)[1]
+
+        unique_filename = f"{uuid.uuid4().hex}{extension}"
+
+        filepath = os.path.join(app.config["UPLOAD_FOLDER"], unique_filename)
+
         file.save(filepath)
 
         from models import JobPhoto
@@ -123,7 +134,7 @@ def create_app():
         photo = JobPhoto(
             job_id=job.id,
             uploaded_by=session["user_id"],
-            file_path=filename
+            file_path=unique_filename
         )
 
         db.session.add(photo)
@@ -136,6 +147,38 @@ def create_app():
     @app.route("/uploads/<filename>")
     def uploaded_file(filename):
         return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+    
+    #---------------------------------------------
+    # Delete photos route
+    #---------------------------------------------
+    @app.route("/photos/<int:photo_id>/delete", methods=["POST"])
+    def delete_photo(photo_id):
+
+        photo = JobPhoto.query.get_or_404(photo_id)
+
+        # Get current user
+        user = User.query.get(session["user_id"])
+
+        # Permission check
+        # Office/admin can delete anything
+        # Installers can only delete their own photos
+        if user.role == "installer" and photo.uploaded_by != user.id:
+            abort(403)
+
+        filepath = os.path.join(app.config["UPLOAD_FOLDER"], photo.file_path)
+
+        # Delete file from disk
+        if os.path.exists(filepath):
+            os.remove(filepath)
+
+        job_id = photo.job_id
+
+        db.session.delete(photo)
+        db.session.commit()
+
+        flash("Photo deleted.")
+
+        return redirect(url_for("job_detail", job_id=job_id))
 
     # --------------------
     # Add Job Note

@@ -93,13 +93,38 @@
 <h3>Photos</h3>
 
 {% if job.photos %}
+
+<div class="photo-grid">
+
     {% for photo in job.photos %}
-        <div class="card">
-            <img src="{{ url_for('uploaded_file', filename=photo.file_path) }}" style="max-width:300px;">
+        <div class="card photo-card">
+
+            <a href="{{ url_for('uploaded_file', filename=photo.file_path) }}" target="_blank">
+                <img src="{{ url_for('uploaded_file', filename=photo.file_path) }}">
+            </a>
+
+            <p class="photo-meta">
+                Uploaded by {{ photo.uploader.name }}
+                {% if photo.created_at %}
+                    - {{ photo.created_at.strftime("%b %d, %Y") }}
+                {% endif %}
+            </p>
+
+            {% if user.role != "installer" or photo.uploaded_by == session["user_id"] %}
+            <form action="{{ url_for('delete_photo', photo_id=photo.id) }}" method="POST">
+                <button type="submit" onclick="return confirm('Delete this photo?')">
+                    Delete
+                </button>
+            </form>
+            {% endif %}
+
         </div>
     {% endfor %}
+
+</div>
+
 {% else %}
-    <p>No photos uploaded yet.</p>
+<p>No photos uploaded yet.</p>
 {% endif %}
 
 <div class="card">
