@@ -51,6 +51,13 @@ class Job(db.Model):
         cascade="all, delete-orphan"
     )
 
+    documents = db.relationship(
+        "JobDocument",
+        backref="job",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
+
     created_by = db.Column(db.Integer, db.ForeignKey("user.id"))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -92,3 +99,17 @@ class JobFile(db.Model):
     file_name = db.Column(db.String(200), nullable=False)
     file_path = db.Column(db.String(300), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class JobDocument(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    job_id = db.Column(db.Integer, db.ForeignKey("job.id"), nullable=False)
+    uploaded_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+
+    file_path = db.Column(db.String(255), nullable=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationship to User (who uploaded it)
+    uploader = db.relationship("User")

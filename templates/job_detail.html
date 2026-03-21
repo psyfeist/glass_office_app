@@ -6,6 +6,13 @@
 
 <div class="card">
     <h2>{{ job.customer_name }}</h2>
+
+    {% if session.get("user_role") == "admin" %}
+        <a href="{{ url_for('edit_job', job_id=job.id) }}">
+            <button style="margin-bottom:10px;">Edit Job</button>
+        </a>
+    {% endif %}
+
     <p><strong>Address:</strong> {{ job.address }}</p>
     <p><strong>Contact Info:</strong> {{ job.contact_info }}</p>
     <p><strong>Job Type:</strong> {{ job.job_type }}</p>
@@ -13,13 +20,33 @@
     <p><strong>Status:</strong> {{ job.status.replace('_', ' ').title() }}</p>
 
     <p><strong>Assigned Installers:</strong></p>
+
     <ul>
         {% for assignment in job.assignments %}
-            <li>{{ assignment.user.name }}</li>
+            <li>
+                {{ assignment.user.name }}
+
+                {% if session.get("user_role") == "admin" %}
+                <form action="{{ url_for('remove_assignment', assignment_id=assignment.id) }}" method="POST" style="display:inline;">
+                    <button type="submit">Remove</button>
+                </form>
+                {% endif %}
+            </li>
         {% else %}
             <li>No installers assigned</li>
         {% endfor %}
     </ul>
+
+{% if session.get("user_role") == "admin" %}
+<form method="POST" action="{{ url_for('assign_installer', job_id=job.id) }}">
+    <select name="user_id">
+        {% for installer in installers %}
+            <option value="{{ installer.id }}">{{ installer.name }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Add Installer</button>
+</form>
+{% endif %}
 
 <form method="POST" action="/jobs/{{ job.id }}/status">
     <div class="card" style="margin-top:20px;">
@@ -68,17 +95,71 @@
 <hr>
 <h3>Notes</h3>
 
+<!-- Add Note Form -->
+<div class="card">
+    <form method="POST" action="/jobs/{{ job.id }}/notes">
+        <label>Add Note:</label><br>
+        <textarea name="content" rows="3" required></textarea><br><br>
+        <button type="submit">Add Note</button>
+    </form>
+</div>
+
+<br>
+
+<!-- Existing Notes -->
 {% if job.notes %}
     {% for note in job.notes %}
         <div class="card">
             <p>{{ note.content }}</p>
-            <small>{{ note.created_at.strftime("%Y-%m-%d %H:%M") }}
+            <small>
+                {{ note.created_at.strftime("%Y-%m-%d %H:%M") }}
                 by {{ note.author.name }}
             </small>
         </div>
     {% endfor %}
 {% else %}
     <p>No notes yet.</p>
+{% endif %}
+
+<hr>
+<h3>Documents</h3>
+
+<!-- Upload -->
+<form method="POST" action="/jobs/{{ job.id }}/upload_document" enctype="multipart/form-data">
+    <input type="file" name="document" accept=".pdf">
+    <button type="submit">Upload Document</button>
+</form>
+
+<br>
+
+<!-- Documents List -->
+{% if job.documents %}
+    {% for doc in job.documents %}
+        <div class="card">
+
+            <a href="{{ url_for('uploaded_file', filename='documents/' + doc.file_path) }}" target="_blank">
+                📄 View Document
+            </a>
+
+            <p class="photo-meta">
+                Uploaded by {{ doc.uploader.name }}
+                {% if doc.created_at %}
+                    - {{ doc.created_at.strftime("%b %d, %Y") }}
+                {% endif %}
+            </p>
+
+            {% if user.role != "installer" or doc.uploaded_by == session["user_id"] %}
+            <form action="{{ url_for('delete_document', doc_id=doc.id) }}" method="POST">
+                <button type="submit" onclick="return confirm('Delete this document?')">
+                    Delete
+                </button>
+            </form>
+            {% endif %}
+
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No documents uploaded yet.</p>
 {% endif %}
 
 <hr>
@@ -99,8 +180,8 @@
     {% for photo in job.photos %}
         <div class="card photo-card">
 
-            <a href="{{ url_for('uploaded_file', filename=photo.file_path) }}" target="_blank">
-                <img src="{{ url_for('uploaded_file', filename=photo.file_path) }}">
+            <a href="{{ url_for('uploaded_file', filename='photos/' + photo.file_path) }}" target="_blank">
+                <img src="{{ url_for('uploaded_file', filename='photos/' + photo.file_path) }}">
             </a>
 
             <p class="photo-meta">
@@ -127,13 +208,7 @@
 <p>No photos uploaded yet.</p>
 {% endif %}
 
-<div class="card">
-    <form method="POST" action="/jobs/{{ job.id }}/notes">
-        <label>Add Note:</label><br>
-        <textarea name="content" rows="4" required></textarea><br><br>
-        <button type="submit">Add Note</button>
-    </form>
-</div>
+
 
 <a href="/jobs">← Back to Job List</a>
 

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>User Management</h2>
+
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Actions</th>
+    </tr>
+
+    {% for user in users %}
+    <tr>
+        <td>{{ user.name }}</td>
+        <td>{{ user.email }}</td>
+        <td>{{ user.role }}</td>
+        <td>
+            {% if user.active %}
+                Active
+            {% else %}
+                Inactive
+            {% endif %}
+        </td>
+        <td>
+
+            {% if session.get("user_role") == "admin" %}
+
+            <!-- Edit -->
+             <a href="{{ url_for('edit_user', user_id=user.id) }}">
+                <button type="button">Edit</button>
+             </a>
+
+            
+             <form action="{{ url_for('toggle_user_active', user_id=user.id) }}" method="POST">
+                {% if user.active %}
+                    <button type="submit">Deactivate</button>
+                {% else %}
+                    <button type="submit">Activate</button>
+                {% endif %}
+            </form>
+
+            <form action="{{ url_for('reset_password', user_id=user.id) }}" method="POST" style="margin-top:5px;">
+                <input type="password" name="new_password" placeholder="New password" required>
+                <button type="submit">Reset Password</button>
+            </form>
+
+            {% endif %}
+
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<hr>
+
+<h3>Create New User</h3>
+
+<form method="POST" action="{{ url_for('create_user') }}">
+    <input type="text" name="name" placeholder="Name" required><br>
+    <input type="email" name="email" placeholder="Email" required><br>
+    <input type="password" name="password" placeholder="Password" required><br>
+
+    <select name="role">
+        <option value="admin">Office/Admin</option>
+        <option value="installer">Installer</option>
+    </select><br><br>
+
+    <button type="submit">Create User</button>
+</form>
+
+{% endblock %}

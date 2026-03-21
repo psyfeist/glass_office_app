@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from database import db
-from models import Job, User, JobAssignment, JobPhoto
+from models import Job, User, JobAssignment, JobPhoto, JobDocument
 from datetime import datetime
 from flask import abort
 import os
@@ -28,6 +28,10 @@ def create_app():
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     app.config["UPLOAD_FOLDER"] = os.path.join(os.getcwd(), "uploads")
+
+    app.config["PHOTO_UPLOAD_FOLDER"] = os.path.join(app.config["UPLOAD_FOLDER"], "photos")
+    app.config["DOCUMENT_UPLOAD_FOLDER"] = os.path.join(app.config["UPLOAD_FOLDER"], "documents")
+
     app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 
     db.init_app(app)
@@ -45,6 +49,126 @@ def create_app():
         if request.endpoint not in allowed_routes:
             if "user_id" not in session:
                 return redirect(url_for("login"))
+
+    #--------------------------------
+    # User Management
+    #--------------------------------
+    @app.route("/users")
+    def manage_users():
+
+    # Only admins/office allowed
+        if session.get("user_role") != "admin":
+            abort(403)
+
+        users = User.query.all()
+
+        return render_template("users.html", users=users)
+    
+    @app.route("/users/create", methods=["POST"])
+    def create_user():
+
+        if session.get("user_role") != "admin":
+            abort(403)
+
+        name = request.form["name"]
+        email = request.form["email"]
+        password = request.form["password"]
+        role = request.form["role"]
+
+        from werkzeug.security import generate_password_hash
+
+        user = User(
+            name=name,
+            email=email,
+            password_hash=generate_password_hash(password),
+            role=role,
+            active=True
+        )
+
+        db.session.add(user)
+        db.session.commit()
+
+        flash("User created successfully.")
+
+        return redirect(url_for("manage_users"))
+    
+    #----------------------------------------------------
+    #User edit 
+    #----------------------------------------------------
+    @app.route("/users/<int:user_id>/edit", methods=["GET", "POST"])
+    def edit_user(user_id):
+
+        if session.get("user_role") != "admin":
+            abort(403)
+
+        user = User.query.get_or_404(user_id)
+
+        if request.method == "POST":
+
+            user.name = request.form.get("name")
+            user.email = request.form.get("email")
+            user.role = request.form.get("role")
+
+            db.session.commit()
+
+            flash("User updated successfully.")
+
+            return redirect(url_for("manage_users"))
+
+        return render_template("edit_user.html", user=user)
+    
+    #-----------------------------------------------------
+    # password reset
+    #-----------------------------------------------------
+    @app.route("/users/<int:user_id>/reset_password", methods=["POST"])
+    def reset_password(user_id):
+
+        # Only admin/office allowed
+        if session.get("user_role") != "admin":
+            abort(403)
+
+        user = User.query.get_or_404(user_id)
+
+        new_password = request.form.get("new_password")
+
+        if not new_password:
+            flash("Password cannot be empty.")
+            return redirect(url_for("manage_users"))
+
+        from werkzeug.security import generate_password_hash
+
+        user.password_hash = generate_password_hash(new_password)
+
+        db.session.commit()
+
+        flash(f"Password reset for {user.name}.")
+
+        return redirect(url_for("manage_users"))
+    
+    #---------------------------------------------
+    # user activate/deactivate
+    #---------------------------------------------
+    @app.route("/users/<int:user_id>/toggle_active", methods=["POST"])
+    def toggle_user_active(user_id):
+
+        # Only admin/office allowed
+        if session.get("user_role") != "admin":
+            abort(403)
+
+        user = User.query.get_or_404(user_id)
+
+        # Prevent self-deactivation (important)
+        if user.id == session.get("user_id"):
+            flash("You cannot deactivate your own account.")
+            return redirect(url_for("manage_users"))
+
+        user.active = not user.active
+
+        db.session.commit()
+
+        flash("User status updated.")
+
+        return redirect(url_for("manage_users"))
 
     # --------------------
     # Home Page
@@ -81,9 +205,7 @@ def create_app():
 
         job = Job.query.get_or_404(job_id)
 
-        # If installer, verify assignment
         if session.get("user_role") == "installer":
-
             user_id = session.get("user_id")
 
             assignment = JobAssignment.query.filter_by(
@@ -96,7 +218,141 @@ def create_app():
 
         user = User.query.get(session["user_id"])
 
-        return render_template("job_detail.html", job=job, user=user)
+        
+        installers = User.query.filter_by(role="installer", active=True).all()
+
+        return render_template(
+            "job_detail.html",
+            job=job,
+            user=user,
+            installers=installers
+        )
+    
+    #-------------------------------------------------------
+    #installer assign route
+    #------------------------------------------------------
+    @app.route("/jobs/<int:job_id>/assign", methods=["POST"])
+    def assign_installer(job_id):
+
+        if session.get("user_role") != "admin":
+            abort(403)
+
+        job = Job.query.get_or_404(job_id)
+
+        user_id = request.form.get("user_id")
+
+        # prevent duplicates
+        existing = JobAssignment.query.filter_by(
+            job_id=job.id,
+            user_id=user_id
+        ).first()
+
+        if existing:
+            flash("Installer already assigned.")
+            return redirect(url_for("job_detail", job_id=job.id))
+
+        assignment = JobAssignment(
+            job_id=job.id,
+            user_id=user_id
+        )
+
+        db.session.add(assignment)
+        db.session.commit()
+
+        flash("Installer assigned.")
+
+        return redirect(url_for("job_detail", job_id=job.id))
+    
+    @app.route("/assignments/<int:assignment_id>/delete", methods=["POST"])
+    def remove_assignment(assignment_id):
+
+        if session.get("user_role") != "admin":
+            abort(403)
+
+        assignment = JobAssignment.query.get_or_404(assignment_id)
+
+        job_id = assignment.job_id
+
+        db.session.delete(assignment)
+        db.session.commit()
+
+        flash("Installer removed.")
+
+        return redirect(url_for("job_detail", job_id=job_id))
+    
+    #--------------------------------------------------------
+    # Dpcument upload route
+    #--------------------------------------------------------
+    @app.route("/jobs/<int:job_id>/upload_document", methods=["POST"])
+    def upload_document(job_id):
+
+        job = Job.query.get_or_404(job_id)
+
+        if "document" not in request.files:
+            flash("No file uploaded.")
+            return redirect(url_for("job_detail", job_id=job.id))
+
+        file = request.files["document"]
+
+        if file.filename == "":
+            flash("No file selected.")
+            return redirect(url_for("job_detail", job_id=job.id))
+
+        # Only allow PDFs
+        if not file.filename.lower().endswith(".pdf"):
+            flash("Only PDF files are allowed.")
+            return redirect(url_for("job_detail", job_id=job.id))
+
+        import uuid
+        from werkzeug.utils import secure_filename
+
+        original_filename = secure_filename(file.filename)
+        extension = ".pdf"
+
+        unique_filename = f"{uuid.uuid4().hex}{extension}"
+
+        filepath = os.path.join(app.config["DOCUMENT_UPLOAD_FOLDER"], unique_filename)
+        file.save(filepath)
+
+        document = JobDocument(
+            job_id=job.id,
+            uploaded_by=session["user_id"],
+            file_path=unique_filename
+        )
+
+        db.session.add(document)
+        db.session.commit()
+
+        flash("Document uploaded successfully.")
+
+        return redirect(url_for("job_detail", job_id=job.id))
+    
+    #-----------------------------------------------
+    # Document delete route
+    #-----------------------------------------------
+    @app.route("/documents/<int:doc_id>/delete", methods=["POST"])
+    def delete_document(doc_id):
+
+        doc = JobDocument.query.get_or_404(doc_id)
+
+        user = User.query.get(session["user_id"])
+
+        if user.role == "installer" and doc.uploaded_by != user.id:
+            abort(403)
+
+        filepath = os.path.join(app.config["DOCUMENT_UPLOAD_FOLDER"], doc.file_path)
+
+        if os.path.exists(filepath):
+            os.remove(filepath)
+
+        job_id = doc.job_id
+
+        db.session.delete(doc)
+        db.session.commit()
+
+        flash("Document deleted.")
+
+        return redirect(url_for("job_detail", job_id=job_id))
     
     #--------------
     # Photo Upload Route
@@ -125,7 +381,10 @@ def create_app():
 
         unique_filename = f"{uuid.uuid4().hex}{extension}"
 
-        filepath = os.path.join(app.config["UPLOAD_FOLDER"], unique_filename)
+        
+        os.makedirs(app.config["PHOTO_UPLOAD_FOLDER"], exist_ok=True)
+
+        filepath = os.path.join(app.config["PHOTO_UPLOAD_FOLDER"], unique_filename)
 
         file.save(filepath)
 
@@ -144,7 +403,7 @@ def create_app():
 
         return redirect(url_for("job_detail", job_id=job.id))
 
-    @app.route("/uploads/<filename>")
+    @app.route("/uploads/<path:filename>")
     def uploaded_file(filename):
         return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
     
@@ -165,7 +424,7 @@ def create_app():
         if user.role == "installer" and photo.uploaded_by != user.id:
             abort(403)
 
-        filepath = os.path.join(app.config["UPLOAD_FOLDER"], photo.file_path)
+        filepath = os.path.join(app.config["PHOTO_UPLOAD_FOLDER"], photo.file_path)
 
         # Delete file from disk
         if os.path.exists(filepath):
@@ -258,6 +517,35 @@ def create_app():
             return redirect(url_for("list_jobs"))
 
         return render_template("create_job.html", installers=installers)
+    
+    #---------------------------------------------------------
+    #Created Job Edit
+    #---------------------------------------------------------
+    @app.route("/jobs/<int:job_id>/edit", methods=["GET", "POST"])
+    def edit_job(job_id):
+
+    # Only admin/office
+        if session.get("user_role") != "admin":
+            abort(403)
+
+        job = Job.query.get_or_404(job_id)
+
+        if request.method == "POST":
+
+            job.customer_name = request.form.get("customer_name")
+            job.address = request.form.get("address")
+            job.contact_info = request.form.get("contact_info")
+            job.job_type = request.form.get("job_type")
+            job.job_category = request.form.get("job_category")
+            job.scope_of_work = request.form.get("scope_of_work")
+
+            db.session.commit()
+
+            flash("Job updated successfully.")
+
+            return redirect(url_for("job_detail", job_id=job.id))
+
+        return render_template("edit_job.html", job=job)
 
     # --------------------
     # Update Job Status
@@ -316,13 +604,19 @@ def create_app():
 
             if user and user.check_password(password):
 
+                # block inactive user
+                if not user.active:
+                    flash("Your account is inactive.")
+                    return redirect(url_for("login"))
+
                 session["user_id"] = user.id
                 session["user_name"] = user.name
                 session["user_role"] = user.role
 
                 return redirect(url_for("home"))
 
-            return "Invalid email or password"
+            flash("Invalid email or password")
+            return redirect(url_for("login"))
 
         return render_template("login.html")
 
