@@ -73,7 +73,8 @@
 
 <nav>
     <a href="{{ url_for('home') }}">Home</a>
-    <a href="{{ url_for('list_jobs') }}">Jobs</a>
+    <a href="{{ url_for('list_jobs') }}">Active Jobs</a>
+    <a href="{{ url_for('completed_jobs') }}">Completed Jobs</a>
 
     {% if session.get("user_role") == "admin" %}
         <a href="{{ url_for('create_job') }}">Create Job</a>

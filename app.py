@@ -182,8 +182,11 @@ def create_app():
     # --------------------
     @app.route("/jobs")
     def list_jobs():
-        if session.get("user_role") == "admin":
-            jobs = Job.query.all()
+
+        user_role = session.get("user_role")
+
+        if user_role == "admin":
+            jobs = Job.query.filter(Job.status != "completed").all()
 
         else:
             user_id = session.get("user_id")
@@ -191,11 +194,32 @@ def create_app():
             jobs = (
                 db.session.query(Job)
                 .join(JobAssignment)
-                .filter(JobAssignment.user_id == user_id)
+                .filter(
+                    JobAssignment.user_id == user_id,
+                    Job.status != "completed"
+                )
                 .all()
             )
 
         return render_template("jobs.html", jobs=jobs)
+
+    #------------------------------------------------------------
+    # completed jobs
+    #------------------------------------------------------------
+    @app.route("/jobs/completed")
+    def completed_jobs():
+
+        if session.get("user_role") == "installer":
+            user_id = session.get("user_id")
+
+            jobs = Job.query.join(JobAssignment).filter(
+                JobAssignment.user_id == user_id,
+                Job.status == "completed"
+            ).all()
+        else:
+            jobs = Job.query.filter_by(status="completed").all()
+
+        return render_template("completed_jobs.html", jobs=jobs)
 
     # --------------------
     # Job Detail
