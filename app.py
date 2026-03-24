@@ -209,15 +209,10 @@ def create_app():
     @app.route("/jobs/completed")
     def completed_jobs():
 
-        if session.get("user_role") == "installer":
-            user_id = session.get("user_id")
+        if session.get("user_role") != "admin":
+            abort(403)
 
-            jobs = Job.query.join(JobAssignment).filter(
-                JobAssignment.user_id == user_id,
-                Job.status == "completed"
-            ).all()
-        else:
-            jobs = Job.query.filter_by(status="completed").all()
+        jobs = Job.query.filter_by(status="completed").all()
 
         return render_template("completed_jobs.html", jobs=jobs)
 
@@ -570,6 +565,24 @@ def create_app():
             return redirect(url_for("job_detail", job_id=job.id))
 
         return render_template("edit_job.html", job=job)
+    
+    #-------------------------------------------------------------------
+    #job deletion
+    #-------------------------------------------------------------------
+    @app.route("/jobs/<int:job_id>/delete", methods=["POST"])
+    def delete_job(job_id):
+
+        if session.get("user_role") != "admin":
+            abort(403)
+
+        job = Job.query.get_or_404(job_id)
+
+        db.session.delete(job)
+        db.session.commit()
+
+        flash("Job deleted successfully.")
+
+        return redirect(url_for("list_jobs"))
 
     # --------------------
     # Update Job Status
