@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Completed Jobs</h2>
+
+{% for job in jobs %}
+    <div class="card">
+        <h3>{{ job.customer_name }}</h3>
+        <p>{{ job.address }}</p>
+        <p>Status: {{ job.status }}</p>
+
+        <a href="{{ url_for('job_detail', job_id=job.id) }}">
+            View Details
+        </a>
+    </div>
+{% else %}
+    <p>No completed jobs.</p>
+{% endfor %}
+
+{% endblock %}
