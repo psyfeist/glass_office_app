@@ -185,8 +185,18 @@ def create_app():
 
         user_role = session.get("user_role")
 
+        active_statuses = [
+            "to_be_scheduled",
+            "scheduled",
+            "on_site",
+            "in_progress",
+            "needs_return_visit"
+        ]
+
         if user_role == "admin":
-            jobs = Job.query.filter(Job.status != "completed").all()
+            jobs = Job.query.filter(
+                Job.status.in_(active_statuses)
+            ).all()
 
         else:
             user_id = session.get("user_id")
@@ -196,12 +206,43 @@ def create_app():
                 .join(JobAssignment)
                 .filter(
                     JobAssignment.user_id == user_id,
-                    Job.status != "completed"
+                    Job.status.in_(active_statuses)
                 )
                 .all()
             )
 
         return render_template("jobs.html", jobs=jobs)
+    
+    #----------------------------------------------------------
+    # to measure
+    #----------------------------------------------------------
+    @app.route("/jobs/to_measure")
+    def to_measure_jobs():
+
+        jobs = Job.query.filter_by(status="needs_measurement").all()
+
+        return render_template("to_measure_jobs.html", jobs=jobs)
+    
+    #-----------------------------------------------------------------
+    # Mark measued button
+    #------------------------------------------------------------------
+    @app.route("/jobs/<int:job_id>/mark_measured", methods=["POST"])
+    def mark_measured(job_id):
+
+        job = Job.query.get_or_404(job_id)
+
+        user_role = session.get("user_role") or session.get("role")
+
+        if not user_role or user_role not in ["admin", "installer"]:
+            abort(403)
+
+        if job.status != "needs_measurement":
+            abort(400)
+
+        job.status = "to_be_scheduled"
+        db.session.commit()
+
+        return redirect(url_for("to_measure_jobs"))
 
     #------------------------------------------------------------
     # completed jobs
@@ -232,7 +273,7 @@ def create_app():
                 user_id=user_id
             ).first()
 
-            if not assignment:
+            if not assignment and job.status != "needs_measurement":
                 abort(403)
 
         user = User.query.get(session["user_id"])

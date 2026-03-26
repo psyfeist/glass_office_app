@@ -19,6 +19,12 @@
     <p><strong>Category:</strong> {{ job.job_category }}</p>
     <p><strong>Status:</strong> {{ job.status.replace('_', ' ').title() }}</p>
 
+    {% if job.status == "needs_measurement" %}
+        <form method="POST" action="{{ url_for('mark_measured', job_id=job.id) }}">
+            <button type="submit">Mark as Measured</button>
+        </form>
+    {% endif %}
+
     <p><strong>Assigned Installers:</strong></p>
 
     <ul>
