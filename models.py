@@ -1,6 +1,6 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import db
-from datetime import datetime
+from datetime import datetime, UTC
 
 
 class User(db.Model):
@@ -17,8 +17,12 @@ class User(db.Model):
         cascade="all, delete-orphan"
     )
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC)
+    )
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -59,15 +63,20 @@ class Job(db.Model):
     )
 
     created_by = db.Column(db.Integer, db.ForeignKey("user.id"))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC)
+    )
 
 
 class JobAssignment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey("job.id"))
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-    assigned_at = db.Column(db.DateTime, default=datetime.utcnow)
+    assigned_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
     role = db.Column(db.String(50))
 
 
@@ -77,7 +86,7 @@ class JobNote(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     note_type = db.Column(db.String(50))
     content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    assigned_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
     author = db.relationship("User")
 
 
@@ -87,7 +96,7 @@ class JobPhoto(db.Model):
     uploaded_by = db.Column(db.Integer, db.ForeignKey("user.id"))
     photo_type = db.Column(db.String(50))
     file_path = db.Column(db.String(300), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    assigned_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
     
     uploader = db.relationship("User")
 
@@ -98,7 +107,7 @@ class JobFile(db.Model):
     uploaded_by = db.Column(db.Integer, db.ForeignKey("user.id"))
     file_name = db.Column(db.String(200), nullable=False)
     file_path = db.Column(db.String(300), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    assigned_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
 
 
 class JobDocument(db.Model):
@@ -109,7 +118,7 @@ class JobDocument(db.Model):
 
     file_path = db.Column(db.String(255), nullable=False)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    assigned_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
 
     # Relationship to User (who uploaded it)
     uploader = db.relationship("User")

@@ -9,12 +9,19 @@
 {% for job in jobs %}
     <div class="card">
         <h3>
-    <a href="/jobs/{{ job.id }}">
-        {{ job.customer_name }}
-    </a>
-</h3>
+            <a href="/jobs/{{ job.id }}">
+                {{ job.customer_name }}
+            </a>
+        </h3>
+
         <p><strong>Address:</strong> {{ job.address }}</p>
         <p><strong>Status:</strong> {{ job.status.replace('_', ' ').title() }}</p>
+
+        <p>
+            <strong>Created:</strong>
+            {{ job.created_at.strftime("%b %d, %Y - %I:%M %p") if job.created_at else "N/A" }}
+        </p>
+
         <p><strong>Installers:</strong>
         {% for assignment in job.assignments %}
             {{ assignment.user.name }}{% if not loop.last %}, {% endif %}

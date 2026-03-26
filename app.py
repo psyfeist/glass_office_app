@@ -196,7 +196,7 @@ def create_app():
         if user_role == "admin":
             jobs = Job.query.filter(
                 Job.status.in_(active_statuses)
-            ).all()
+            ).order_by(Job.created_at.desc()).all()
 
         else:
             user_id = session.get("user_id")
@@ -208,6 +208,7 @@ def create_app():
                     JobAssignment.user_id == user_id,
                     Job.status.in_(active_statuses)
                 )
+                .order_by(Job.created_at.desc())
                 .all()
             )
 
@@ -219,7 +220,9 @@ def create_app():
     @app.route("/jobs/to_measure")
     def to_measure_jobs():
 
-        jobs = Job.query.filter_by(status="needs_measurement").all()
+        jobs = Job.query.filter_by(
+            status="needs_measurement"
+        ).order_by(Job.created_at.desc()).all()
 
         return render_template("to_measure_jobs.html", jobs=jobs)
     
@@ -253,7 +256,9 @@ def create_app():
         if session.get("user_role") != "admin":
             abort(403)
 
-        jobs = Job.query.filter_by(status="completed").all()
+        jobs = Job.query.filter_by(
+            status="completed"
+        ).order_by(Job.created_at.desc()).all()
 
         return render_template("completed_jobs.html", jobs=jobs)
 
@@ -644,8 +649,8 @@ def create_app():
     # --------------------
     # Create Admin User (temporary)
     # --------------------
-    @app.route("/create-admin")
-    def create_admin():
+    #@app.route("/create-admin")
+    #def create_admin():
 
         existing = User.query.filter_by(email="admin@glass.local").first()
 
