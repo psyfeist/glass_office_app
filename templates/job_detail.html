@@ -4,28 +4,38 @@
 
 {% block content %}
 
+<!-- 🔹 HEADER -->
 <div class="card">
     <h2>{{ job.customer_name }}</h2>
+    <p><strong>Address:</strong> {{ job.address }}</p>
+    <p><strong>Status:</strong> {{ job.status.replace('_', ' ').title() }}</p>
 
     {% if session.get("user_role") == "admin" %}
         <a href="{{ url_for('edit_job', job_id=job.id) }}">
-            <button style="margin-bottom:10px;">Edit Job</button>
+            <button>Edit Job</button>
         </a>
     {% endif %}
-
-    <p><strong>Address:</strong> {{ job.address }}</p>
-    <p><strong>Contact Info:</strong> {{ job.contact_info }}</p>
-    <p><strong>Job Type:</strong> {{ job.job_type }}</p>
-    <p><strong>Category:</strong> {{ job.job_category }}</p>
-    <p><strong>Status:</strong> {{ job.status.replace('_', ' ').title() }}</p>
 
     {% if job.status == "needs_measurement" %}
         <form method="POST" action="{{ url_for('mark_measured', job_id=job.id) }}">
             <button type="submit">Mark as Measured</button>
         </form>
     {% endif %}
+</div>
 
-    <p><strong>Assigned Installers:</strong></p>
+<!-- 🔹 JOB DETAILS -->
+<div class="card">
+    <h3>Job Details</h3>
+    <p><strong>Contact:</strong> {{ job.contact_info }}</p>
+    <p><strong>Type:</strong> {{ job.job_type }}</p>
+    <p><strong>Category:</strong> {{ job.job_category }}</p>
+    <p><strong>Scope:</strong></p>
+    <p>{{ job.scope_of_work }}</p>
+</div>
+
+<!-- 🔹 INSTALLERS -->
+<div class="card">
+    <h3>Installers</h3>
 
     <ul>
         {% for assignment in job.assignments %}
@@ -43,178 +53,128 @@
         {% endfor %}
     </ul>
 
-{% if session.get("user_role") == "admin" %}
-<form method="POST" action="{{ url_for('assign_installer', job_id=job.id) }}">
-    <select name="user_id">
-        {% for installer in installers %}
-            <option value="{{ installer.id }}">{{ installer.name }}</option>
-        {% endfor %}
-    </select>
-    <button type="submit">Add Installer</button>
-</form>
-{% endif %}
+    {% if session.get("user_role") == "admin" %}
+    <form method="POST" action="{{ url_for('assign_installer', job_id=job.id) }}">
+        <select name="user_id">
+            {% for installer in installers %}
+                <option value="{{ installer.id }}">{{ installer.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Add Installer</button>
+    </form>
+    {% endif %}
+</div>
 
-<form method="POST" action="/jobs/{{ job.id }}/status">
-    <div class="card" style="margin-top:20px;">
-        <label>Update Status:</label><br>
+<!-- 🔹 STATUS -->
+<div class="card">
+    <h3>Update Status</h3>
+
+    <form method="POST" action="/jobs/{{ job.id }}/status">
         <select name="status">
-    <option value="to_be_scheduled"
-        {% if job.status == "to_be_scheduled" %}selected{% endif %}>
-        To Be Scheduled
-    </option>
 
-    <option value="scheduled"
-        {% if job.status == "scheduled" %}selected{% endif %}>
-        Scheduled
-    </option>
+            <option value="to_be_scheduled" {% if job.status == "to_be_scheduled" %}selected{% endif %}>To Be Scheduled</option>
+            <option value="scheduled" {% if job.status == "scheduled" %}selected{% endif %}>Scheduled</option>
+            <option value="on_site" {% if job.status == "on_site" %}selected{% endif %}>On Site</option>
+            <option value="in_progress" {% if job.status == "in_progress" %}selected{% endif %}>In Progress</option>
+            <option value="completed" {% if job.status == "completed" %}selected{% endif %}>Completed</option>
+            <option value="needs_return_visit" {% if job.status == "needs_return_visit" %}selected{% endif %}>Needs Return Visit</option>
 
-    <option value="on_site"
-        {% if job.status == "on_site" %}selected{% endif %}>
-        On Site
-    </option>
-
-    <option value="in_progress"
-        {% if job.status == "in_progress" %}selected{% endif %}>
-        In Progress
-    </option>
-
-    <option value="completed"
-        {% if job.status == "completed" %}selected{% endif %}>
-        Completed
-    </option>
-
-    <option value="needs_return_visit"
-        {% if job.status == "needs_return_visit" %}selected{% endif %}>
-        Needs Return Visit
-    </option>
-</select>
+        </select>
 
         <br><br>
         <button type="submit">Save Status</button>
-    </div>
-</form>
-
-    <p><strong>Scope of Work:</strong></p>
-    <p>{{ job.scope_of_work }}</p>
-</div>
-
-<hr>
-<h3>Notes</h3>
-
-<!-- Add Note Form -->
-<div class="card">
-    <form method="POST" action="/jobs/{{ job.id }}/notes">
-        <label>Add Note:</label><br>
-        <textarea name="content" rows="3" required></textarea><br><br>
-        <button type="submit">Add Note</button>
     </form>
 </div>
 
-<br>
+<!-- 🔹 NOTES -->
+<div class="card">
+    <h3>Notes</h3>
 
-<!-- Existing Notes -->
-{% if job.notes %}
-    {% for note in job.notes %}
-        <div class="card">
-            <p>{{ note.content }}</p>
-            <small>
-                {{ note.created_at.strftime("%Y-%m-%d %H:%M") }}
-                by {{ note.author.name }}
-            </small>
-        </div>
-    {% endfor %}
-{% else %}
-    <p>No notes yet.</p>
-{% endif %}
+    <form method="POST" action="/jobs/{{ job.id }}/notes">
+        <textarea name="content" rows="3" required></textarea><br><br>
+        <button type="submit">Add Note</button>
+    </form>
 
-<hr>
-<h3>Documents</h3>
+    <br>
 
-<!-- Upload -->
-<form method="POST" action="/jobs/{{ job.id }}/upload_document" enctype="multipart/form-data">
-    <input type="file" name="document" accept=".pdf">
-    <button type="submit">Upload Document</button>
-</form>
-
-<br>
-
-<!-- Documents List -->
-{% if job.documents %}
-    {% for doc in job.documents %}
-        <div class="card">
-
-            <a href="{{ url_for('uploaded_file', filename='documents/' + doc.file_path) }}" target="_blank">
-                📄 View Document
-            </a>
-
-            <p class="photo-meta">
-                Uploaded by {{ doc.uploader.name }}
-                {% if doc.created_at %}
-                    - {{ doc.created_at.strftime("%b %d, %Y") }}
-                {% endif %}
-            </p>
-
-            {% if user.role != "installer" or doc.uploaded_by == session["user_id"] %}
-            <form action="{{ url_for('delete_document', doc_id=doc.id) }}" method="POST">
-                <button type="submit" onclick="return confirm('Delete this document?')">
-                    Delete
-                </button>
-            </form>
-            {% endif %}
-
-        </div>
-    {% endfor %}
-{% else %}
-    <p>No documents uploaded yet.</p>
-{% endif %}
-
-<hr>
-<h3>Upload Photo</h3>
-
-<form method="POST" action="/jobs/{{ job.id }}/upload_photo" enctype="multipart/form-data">
-    <input type="file" name="photo" accept="image/*">
-    <button type="submit">Upload Photo</button>
-</form>
-
-<hr>
-<h3>Photos</h3>
-
-{% if job.photos %}
-
-<div class="photo-grid">
-
-    {% for photo in job.photos %}
-        <div class="card photo-card">
-
-            <a href="{{ url_for('uploaded_file', filename='photos/' + photo.file_path) }}" target="_blank">
-                <img src="{{ url_for('uploaded_file', filename='photos/' + photo.file_path) }}">
-            </a>
-
-            <p class="photo-meta">
-                Uploaded by {{ photo.uploader.name }}
-                {% if photo.created_at %}
-                    - {{ photo.created_at.strftime("%b %d, %Y") }}
-                {% endif %}
-            </p>
-
-            {% if user.role != "installer" or photo.uploaded_by == session["user_id"] %}
-            <form action="{{ url_for('delete_photo', photo_id=photo.id) }}" method="POST">
-                <button type="submit" onclick="return confirm('Delete this photo?')">
-                    Delete
-                </button>
-            </form>
-            {% endif %}
-
-        </div>
-    {% endfor %}
-
+    {% if job.notes %}
+        {% for note in job.notes %}
+            <div class="card">
+                <p>{{ note.content }}</p>
+                <small>
+                    {{ note.created_at.strftime("%Y-%m-%d %H:%M") }}
+                    by {{ note.author.name }}
+                </small>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No notes yet.</p>
+    {% endif %}
 </div>
 
-{% else %}
-<p>No photos uploaded yet.</p>
-{% endif %}
+<!-- 🔹 DOCUMENTS -->
+<div class="card">
+    <h3>Documents</h3>
 
+    <form method="POST" action="/jobs/{{ job.id }}/upload_document" enctype="multipart/form-data">
+        <input type="file" name="document" accept=".pdf">
+        <button type="submit">Upload Document</button>
+    </form>
 
+    <br>
+
+    {% if job.documents %}
+        {% for doc in job.documents %}
+            <div class="card">
+                <a href="{{ url_for('uploaded_file', filename='documents/' + doc.file_path) }}" target="_blank">
+                    📄 View Document
+                </a>
+
+                <p>
+                    Uploaded by {{ doc.uploader.name }}
+                    {% if doc.created_at %}
+                        - {{ doc.created_at.strftime("%b %d, %Y") }}
+                    {% endif %}
+                </p>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No documents uploaded yet.</p>
+    {% endif %}
+</div>
+
+<!-- 🔹 PHOTOS -->
+<div class="card">
+    <h3>Photos</h3>
+
+    <form method="POST" action="/jobs/{{ job.id }}/upload_photo" enctype="multipart/form-data">
+        <input type="file" name="photo" accept="image/*">
+        <button type="submit">Upload Photo</button>
+    </form>
+
+    <br>
+
+    {% if job.photos %}
+        <div class="photo-grid">
+            {% for photo in job.photos %}
+                <div class="card photo-card">
+                    <a href="{{ url_for('uploaded_file', filename='photos/' + photo.file_path) }}" target="_blank">
+                        <img src="{{ url_for('uploaded_file', filename='photos/' + photo.file_path) }}">
+                    </a>
+
+                    <p>
+                        Uploaded by {{ photo.uploader.name }}
+                        {% if photo.created_at %}
+                            - {{ photo.created_at.strftime("%b %d, %Y") }}
+                        {% endif %}
+                    </p>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No photos uploaded yet.</p>
+    {% endif %}
+</div>
 
 <a href="/jobs">← Back to Job List</a>
 

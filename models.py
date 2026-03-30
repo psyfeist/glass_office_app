@@ -88,6 +88,7 @@ class JobNote(db.Model):
     content = db.Column(db.Text, nullable=False)
     assigned_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
     author = db.relationship("User")
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
 
 
 class JobPhoto(db.Model):
