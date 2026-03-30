@@ -1,11 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, abort, send_from_directory
 from database import db
 from models import Job, User, JobAssignment, JobPhoto, JobDocument
+
 from datetime import datetime
-from flask import abort
-import os
+from PIL import Image
+
 from werkzeug.utils import secure_filename
-from flask import send_from_directory
+import os
 import uuid
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
@@ -17,6 +18,8 @@ def allowed_file(filename):
 
 def create_app():
     app = Flask(__name__)
+
+    app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10MB
 
     app.config["SECRET_KEY"] = "super-secret-key"
 
@@ -441,20 +444,30 @@ def create_app():
             flash("Unsupported file type. Please upload JPG or PNG images.")
             return redirect(url_for("job_detail", job_id=job.id))
 
-        original_filename = secure_filename(file.filename)
-        extension = os.path.splitext(original_filename)[1]
+        # 🔥 ALWAYS SAVE AS JPG NOW
+        unique_filename = f"{uuid.uuid4().hex}.jpg"
 
-        unique_filename = f"{uuid.uuid4().hex}{extension}"
-
-        
         os.makedirs(app.config["PHOTO_UPLOAD_FOLDER"], exist_ok=True)
-
         filepath = os.path.join(app.config["PHOTO_UPLOAD_FOLDER"], unique_filename)
 
-        file.save(filepath)
+        # 🔥 OPEN IMAGE WITH PIL
+        image = Image.open(file)
 
-        from models import JobPhoto
+        # Convert to RGB (fixes PNG, HEIC, etc.)
+        if image.mode != "RGB":
+            image = image.convert("RGB")
 
+        # Resize if too large
+        max_width = 1280
+        if image.width > max_width:
+            ratio = max_width / float(image.width)
+            new_height = int(image.height * ratio)
+            image = image.resize((max_width, new_height))
+
+        # 🔥 SAVE COMPRESSED
+        image.save(filepath, "JPEG", quality=75, optimize=True)
+
+        # Save to DB
         photo = JobPhoto(
             job_id=job.id,
             uploaded_by=session["user_id"],
@@ -471,6 +484,14 @@ def create_app():
     @app.route("/uploads/<path:filename>")
     def uploaded_file(filename):
         return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+    
+    #---------------------------------------------------------------------------------
+    # photo upload exceeded size error message
+    #---------------------------------------------------------------------------------
+    @app.errorhandler(413)
+    def too_large(e):
+        flash("File too large. Maximum size is 10MB.")
+        return redirect(request.referrer or url_for("list_jobs"))
     
     #---------------------------------------------
     # Delete photos route
