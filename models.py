@@ -43,6 +43,7 @@ class Job(db.Model):
     status = db.Column(db.String(50), default="scheduled")
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
+    location_instructions = db.Column(db.Text, nullable=True)
     notes = db.relationship("JobNote", backref="job", lazy=True)
     assignments = db.relationship(
         "JobAssignment",

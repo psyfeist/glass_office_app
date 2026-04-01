@@ -565,6 +565,13 @@ def create_app():
             install_date_str = request.form.get("install_date")
             installer_ids = request.form.getlist("installers")
 
+            address = request.form.get("address")
+            location_instructions = request.form.get("location_instructions")
+
+            # 🔥 VALIDATION
+            if not address and not location_instructions:
+                flash("Provide an address or location instructions")
+                return redirect(url_for("create_job"))
 
             if install_date_str:
                 install_date_obj = datetime.strptime(
@@ -575,7 +582,8 @@ def create_app():
 
             job = Job(
                 customer_name=request.form["customer_name"],
-                address=request.form["address"],
+                address=address,
+                location_instructions=location_instructions,
                 contact_info=request.form["contact_info"],
                 job_type=request.form["job_type"],
                 job_category=request.form["job_category"],
@@ -598,7 +606,6 @@ def create_app():
                 db.session.add(assignment)
 
             db.session.commit()
-
 
             return redirect(url_for("list_jobs"))
 
