@@ -604,6 +604,36 @@ def create_app():
 
         return render_template("create_job.html", installers=installers)
     
+    #-----------------------------------------------------------------------------
+    # Set Location
+    #------------------------------------------------------------------------------
+    
+    @app.route("/jobs/<int:job_id>/set_location", methods=["POST"])
+    def set_location(job_id):
+        job = Job.query.get_or_404(job_id)
+
+        lat = request.form.get("latitude")
+        lng = request.form.get("longitude")
+
+        print("====== DEBUG ======")
+        print("LAT:", lat)
+        print("LNG:", lng)
+        print("JOB BEFORE:", job.latitude, job.longitude)
+
+        if lat and lng:
+            job.latitude = float(lat)
+            job.longitude = float(lng)
+            db.session.commit()
+            print("SAVED!")
+        else:
+            print("NO DATA RECEIVED")
+
+        print("JOB AFTER:", job.latitude, job.longitude)
+        print("===================")
+
+        return redirect(url_for("job_detail", job_id=job.id))
+
+    
     #---------------------------------------------------------
     #Created Job Edit
     #---------------------------------------------------------

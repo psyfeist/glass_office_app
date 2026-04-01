@@ -41,6 +41,8 @@ class Job(db.Model):
     scope_of_work = db.Column(db.Text)
     install_date = db.Column(db.Date)
     status = db.Column(db.String(50), default="scheduled")
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
     notes = db.relationship("JobNote", backref="job", lazy=True)
     assignments = db.relationship(
         "JobAssignment",
@@ -70,6 +72,7 @@ class Job(db.Model):
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC)
     )
+
 
 
 class JobAssignment(db.Model):

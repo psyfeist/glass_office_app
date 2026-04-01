@@ -23,6 +23,22 @@
     {% endif %}
 </div>
 
+<!-- 🔹 LOCATION -->
+<div class="card">
+    <h3>Location</h3>
+
+    {% if job.latitude and job.longitude %}
+        <p>✅ Location set</p>
+
+        <a href="https://www.google.com/maps?q={{ job.latitude }},{{ job.longitude }}" target="_blank">
+            <button>Open in Maps</button>
+        </a>
+
+    {% else %}
+        <button onclick="openMap()">Add Location</button>
+    {% endif %}
+</div>
+
 <!-- 🔹 JOB DETAILS -->
 <div class="card">
     <h3>Job Details</h3>
@@ -177,5 +193,63 @@
 </div>
 
 <a href="/jobs">← Back to Job List</a>
+
+<!-- 🔹 MAP MODAL -->
+<div id="mapModal" style="display:none; position:fixed; top:10%; left:5%; width:90%; background:white; padding:10px; border:1px solid #ccc; z-index:1000;">
+    
+    <div id="map" style="height:300px;"></div>
+
+    <form method="POST" action="/jobs/{{ job.id }}/set_location">
+        <input type="hidden" name="latitude" id="latitude">
+        <input type="hidden" name="longitude" id="longitude">
+
+        <br>
+        <button type="submit">Save Location</button>
+        <button type="button" onclick="closeMap()">Cancel</button>
+    </form>
+</div>
+
+
+
+{% endblock %}
+
+{% block scripts %}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+let map;
+let marker;
+
+function openMap() {
+    console.log("openMap triggered"); // debug
+
+    document.getElementById("mapModal").style.display = "block";
+
+    if (!map) {
+        map = L.map('map').setView([52, -106], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        map.on('click', function(e) {
+            const { lat, lng } = e.latlng;
+
+            if (marker) map.removeLayer(marker);
+
+            marker = L.marker([lat, lng]).addTo(map);
+
+            document.getElementById("latitude").value = lat;
+            document.getElementById("longitude").value = lng;
+        });
+    }
+}
+
+function closeMap() {
+    document.getElementById("mapModal").style.display = "none";
+}
+</script>
 
 {% endblock %}
