@@ -2,12 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+
+    <!-- Mobile scaling -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>{% block title %}Glass Office{% endblock %}</title>
 
     <style>
+        html {
+            -webkit-text-size-adjust: 100%;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: Arial, sans-serif;
-            margin: 40px;
+            margin: 10px;
             background: #f5f5f5;
         }
 
@@ -47,9 +59,23 @@
             border: 1px solid #99cc99;
         }
 
+        button {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            margin-top: 8px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
         .photo-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 12px;
             margin-top: 10px;
         }
@@ -64,6 +90,33 @@
             font-size: 12px;
             color: #666;
             margin-top: 4px;
+        }
+
+        /* 🔥 MOBILE NAV FIX */
+        @media (max-width: 768px) {
+
+            nav {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            nav a {
+                display: block;
+                width: 100%;
+                padding: 12px;
+                background: white;
+                border-radius: 6px;
+                text-align: center;
+                border: 1px solid #ddd;
+                margin-right: 0; /* remove horizontal spacing */
+            }
+
+            nav span {
+                display: block;
+                margin-top: 10px;
+                text-align: center;
+            }
         }
 
     </style>
@@ -85,13 +138,11 @@
         <a href="{{ url_for('manage_users') }}">Users</a>
     {% endif %}
 
-    
-
     {% if session.get("user_name") %}
-        <span style="margin-left:20px;">
+        <span>
             Logged in as <strong>{{ session.get("user_name") }}</strong>
         </span>
-        <a href="{{ url_for('logout') }}" style="margin-left:10px;">Logout</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
     {% endif %}
 </nav>
 
