@@ -27,15 +27,30 @@
 <div class="card">
     <h3>Location</h3>
 
-    {% if job.latitude and job.longitude %}
+    {% if job.latitude is not none and job.longitude is not none %}
         <p>✅ Location set</p>
 
         <a href="https://www.google.com/maps?q={{ job.latitude }},{{ job.longitude }}" target="_blank">
             <button>Open in Maps</button>
         </a>
 
+        <!-- CHANGE LOCATION -->
+        <button onclick="openMap()">📍 Change Location</button>
+
+        <!-- DELETE LOCATION -->
+        <form method="POST"
+              action="{{ url_for('delete_location', job_id=job.id) }}"
+              onsubmit="return confirm('Remove this location?')">
+
+            <button type="submit" class="danger-btn">
+                ❌ Remove Location
+            </button>
+        </form>
+
     {% else %}
-        <button onclick="openMap()">Add Location</button>
+        <p>⚠️ No location set</p>
+
+        <button onclick="openMap()">📍 Add Location</button>
     {% endif %}
 </div>
 
@@ -197,7 +212,7 @@
 <!-- 🔹 MAP MODAL -->
 <div id="mapModal" style="display:none; position:fixed; top:10%; left:5%; width:90%; background:white; padding:10px; border:1px solid #ccc; z-index:1000;">
     
-    <div id="map" style="height:300px;"></div>
+    <div id="map" style="height:650px;"></div>
 
     <form method="POST" action="/jobs/{{ job.id }}/set_location">
         <input type="hidden" name="latitude" id="latitude">
@@ -241,8 +256,15 @@ function openMap() {
 
             marker = L.marker([lat, lng]).addTo(map);
 
+            // Save values
             document.getElementById("latitude").value = lat;
             document.getElementById("longitude").value = lng;
+
+            // 👇 ADD THIS (visual feedback)
+            const status = document.getElementById("location-status");
+            if (status) {
+                status.innerText = "✅ Location set";
+            }
         });
     }
 }

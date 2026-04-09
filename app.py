@@ -568,6 +568,9 @@ def create_app():
             address = request.form.get("address")
             location_instructions = request.form.get("location_instructions")
 
+            lat = request.form.get("latitude")
+            lng = request.form.get("longitude")
+
             # 🔥 VALIDATION
             if not address and not location_instructions:
                 flash("Provide an address or location instructions")
@@ -589,7 +592,9 @@ def create_app():
                 job_category=request.form["job_category"],
                 scope_of_work=request.form["scope_of_work"],
                 install_date=install_date_obj,
-                status=request.form["status"]
+                status=request.form["status"],
+                latitude=float(lat) if lat else None,
+                longitude=float(lng) if lng else None
             )
 
             db.session.add(job)
@@ -627,7 +632,7 @@ def create_app():
         print("LNG:", lng)
         print("JOB BEFORE:", job.latitude, job.longitude)
 
-        if lat and lng:
+        if lat is not None and lng is not None:
             job.latitude = float(lat)
             job.longitude = float(lng)
             db.session.commit()
@@ -639,6 +644,27 @@ def create_app():
         print("===================")
 
         return redirect(url_for("job_detail", job_id=job.id))
+    
+    #--------------------------------------------------------------------------
+    # Delete Location
+    #--------------------------------------------------------------------------
+    @app.route("/jobs/<int:job_id>/delete_location", methods=["POST"])
+    def delete_location(job_id):
+        job = Job.query.get_or_404(job_id)
+
+        print("====== DELETE LOCATION ======")
+        print("BEFORE:", job.latitude, job.longitude)
+
+        job.latitude = None
+        job.longitude = None
+
+        db.session.commit()
+
+        print("AFTER:", job.latitude, job.longitude)
+        print("=============================")
+
+        return redirect(url_for("job_detail", job_id=job.id))
+
 
     
     #---------------------------------------------------------

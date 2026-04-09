@@ -7,14 +7,27 @@
 <h2>Create New Job</h2>
 
 <form method="POST">
+
+    <!-- Hidden location fields -->
+    <input type="hidden" name="latitude" id="latitude">
+    <input type="hidden" name="longitude" id="longitude">
+
+    <!-- 🔥 LOCATION CARD -->
+    <div class="card">
+        <h3>Location</h3>
+
+        <button type="button" onclick="openMap()">📍 Set Location</button>
+
+        <p id="location-status">⚠️ No location set</p>
+    </div>
+
+    <!-- MAIN FORM CARD -->
     <div class="card">
 
         <p>
             <label>Customer Name:</label><br>
             <input type="text" name="customer_name" required>
         </p>
-
-        
 
         <p>
             <label>Address</label><br>
@@ -63,7 +76,6 @@
         <p>
             <label>Status:</label><br>
             <select name="status" required>
-
                 <option value="needs_measurement">Needs Measurement</option>
                 <option value="to_be_scheduled">To Be Scheduled</option>
                 <option value="scheduled">Scheduled</option>
@@ -83,5 +95,82 @@
 
     </div>
 </form>
+
+<!-- 🔥 MAP MODAL -->
+<div id="mapModal" style="
+    display:none;
+    position:fixed;
+    top:10%;
+    left:5%;
+    width:90%;
+    background:white;
+    padding:10px;
+    border:1px solid #ccc;
+    z-index:1000;
+">
+    
+    <div id="map" style="height:700px;"></div>
+
+    <br>
+    <button type="button" onclick="closeMap()">Close</button>
+</div>
+
+<!-- 🔥 LEAFLET -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<!-- 🔥 MAP SCRIPT (FIXED PROPERLY) -->
+<script>
+let map;
+let marker;
+
+function openMap() {
+    console.log("openMap triggered");
+
+    // Show modal first
+    document.getElementById("mapModal").style.display = "block";
+
+    // Wait for modal to render
+    setTimeout(() => {
+
+        // Initialize map ONCE
+        if (!map) {
+            map = L.map('map').setView([52, -106], 6);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            map.on('click', function(e) {
+                const { lat, lng } = e.latlng;
+
+                if (marker) {
+                    map.removeLayer(marker);
+                }
+
+                marker = L.marker([lat, lng]).addTo(map);
+
+                // Save values to hidden inputs
+                document.getElementById("latitude").value = lat;
+                document.getElementById("longitude").value = lng;
+
+                // Update UI
+                const status = document.getElementById("location-status");
+                if (status) {
+                    status.innerText = "✅ Location set";
+                }
+            });
+        }
+
+        // 🔥 Critical fix for hidden map rendering
+        map.invalidateSize();
+
+    }, 100);
+}
+
+function closeMap() {
+    document.getElementById("mapModal").style.display = "none";
+}
+</script>
 
 {% endblock %}
