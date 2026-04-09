@@ -101,8 +101,8 @@
     <h3>Update Status</h3>
 
     <form method="POST" action="/jobs/{{ job.id }}/status">
-        <select name="status">
-
+        <select name="status" id="status">
+            
             <option value="to_be_scheduled" {% if job.status == "to_be_scheduled" %}selected{% endif %}>To Be Scheduled</option>
             <option value="scheduled" {% if job.status == "scheduled" %}selected{% endif %}>Scheduled</option>
             <option value="on_site" {% if job.status == "on_site" %}selected{% endif %}>On Site</option>
@@ -111,6 +111,11 @@
             <option value="needs_return_visit" {% if job.status == "needs_return_visit" %}selected{% endif %}>Needs Return Visit</option>
 
         </select>
+        <div id="schedule-date-field" style="display:none; margin-top:10px;">
+            <label>Install Date:</label><br>
+            <input type="date" name="install_date" value="{{ job.install_date }}">
+        </div>
+
 
         <br><br>
         <button type="submit">Save Status</button>
@@ -272,6 +277,25 @@ function openMap() {
 function closeMap() {
     document.getElementById("mapModal").style.display = "none";
 }
+
+//  SHOW DATE FIELD WHEN SCHEDULED
+const statusSelect = document.getElementById("status");
+const dateField = document.getElementById("schedule-date-field");
+
+function toggleDateField() {
+    if (statusSelect.value === "scheduled") {
+        dateField.style.display = "block";
+    } else {
+        dateField.style.display = "none";
+    }
+}
+
+// Run when dropdown changes
+statusSelect.addEventListener("change", toggleDateField);
+
+// Run when page loads
+toggleDateField();
+
 </script>
 
 {% endblock %}

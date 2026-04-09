@@ -119,6 +119,27 @@
             }
         }
 
+            /* 🔥 DESKTOP / MOBILE TOGGLE (FIXED) */
+            .desktop-only {
+                display: block !important;
+            }
+
+            .mobile-only {
+                display: none !important;
+            }
+
+/* Only switch to mobile on VERY small screens */
+            @media (max-width: 600px) {
+                .desktop-only {
+                    display: none !important;
+                }
+
+                .mobile-only {
+                    display: block !important;
+                }
+            }
+
+
     </style>
 </head>
 

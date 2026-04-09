@@ -4,16 +4,71 @@
 
 {% block content %}
 
-<h2>Welcome to Glass Office System</h2>
+<p>ROLE: {{ session.get("user_role") }}</p>
 
-<div class="card">
-    <p>
-        <a href="/jobs">View All Jobs</a>
-    </p>
+{% if session.get("user_role") == "admin" %}
 
-    <p>
-        <a href="/jobs/new">Create New Job</a>
-    </p>
-</div>
+    <!-- 🔴 DESKTOP CALENDAR (ADMIN ONLY) -->
+    <h2>Schedule</h2>
+
+    <h3>{{ year }} - {{ month }}</h3>
+
+    <div style="margin-bottom: 10px;">
+        <a href="/?month={{ month-1 }}&year={{ year }}">⬅ Prev</a>
+        |
+        <a href="/?month={{ month+1 }}&year={{ year }}">Next ➡</a>
+    </div>
+
+    <table style="width:100%; border-collapse: collapse;">
+        <tr>
+            <th>Mon</th>
+            <th>Tue</th>
+            <th>Wed</th>
+            <th>Thu</th>
+            <th>Fri</th>
+            <th>Sat</th>
+            <th>Sun</th>
+        </tr>
+
+        {% for week in cal %}
+        <tr>
+            {% for day in week %}
+            <td style="border:1px solid #ccc; height:120px; vertical-align: top; padding:5px;">
+
+                {% if day != 0 %}
+                    <strong>{{ day }}</strong>
+
+                    {% for job in jobs_by_day.get(day, []) %}
+                        <div style="background:#e6f3ff; margin-top:5px; padding:3px; border-radius:4px;">
+                            <a href="{{ url_for('job_detail', job_id=job.id) }}">
+                                {{ job.customer_name }}
+                            </a>
+                        </div>
+                    {% endfor %}
+
+                {% endif %}
+
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+
+{% else %}
+
+    <!-- 🔵 INSTALLER / MOBILE VIEW -->
+    <h2>Welcome to Glass Office System</h2>
+
+    <div class="card">
+        <p>
+            <a href="/jobs">View All Jobs</a>
+        </p>
+
+        <p>
+            <a href="/jobs/new">Create New Job</a>
+        </p>
+    </div>
+
+{% endif %}
 
 {% endblock %}

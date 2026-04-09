@@ -4,10 +4,12 @@ from models import Job, User, JobAssignment, JobPhoto, JobDocument
 
 from datetime import datetime
 from PIL import Image
+from datetime import date
 
 from werkzeug.utils import secure_filename
 import os
 import uuid
+import calendar
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
 
@@ -178,7 +180,35 @@ def create_app():
     # --------------------
     @app.route("/")
     def home():
-        return render_template("home.html")
+
+        today = date.today()
+
+        year = int(request.args.get("year", today.year))
+        month = int(request.args.get("month", today.month))
+
+        cal = calendar.monthcalendar(year, month)
+
+    # Get jobs for this month
+        jobs = Job.query.filter(
+            db.extract("year", Job.install_date) == year,
+            db.extract("month", Job.install_date) == month
+        ).all()
+
+    # Organize jobs by day
+        jobs_by_day = {}
+        for job in jobs:
+            if job.install_date:
+                day = job.install_date.day
+                jobs_by_day.setdefault(day, []).append(job)
+
+        return render_template(
+            "home.html",
+            cal=cal,
+            jobs_by_day=jobs_by_day,
+            year=year,
+            month=month,
+            jobs=jobs  # 👈 keep this for mobile if needed
+        )
 
     # --------------------
     # Job List
@@ -723,9 +753,15 @@ def create_app():
         job = Job.query.get_or_404(job_id)
 
         new_status = request.form.get("status")
+        install_date_str = request.form.get("install_date")
 
         if new_status:
             job.status = new_status
+
+        # 🔥 Save install date if provided
+            if install_date_str:
+                job.install_date = datetime.strptime(install_date_str, "%Y-%m-%d").date()
+
             db.session.commit()
 
         return redirect(url_for("job_detail", job_id=job.id))
