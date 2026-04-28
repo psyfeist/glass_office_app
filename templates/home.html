@@ -11,6 +11,25 @@
     <!-- 🔴 DESKTOP CALENDAR (ADMIN ONLY) -->
     <h2>Schedule</h2>
 
+    <div style="margin-bottom: 15px; display: flex; gap: 15px; flex-wrap: wrap;">
+
+    <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="width: 15px; height: 15px; background: #28a745; border-radius: 3px;"></div>
+        <span>Completed</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="width: 15px; height: 15px; background: #ffc107; border-radius: 3px;"></div>
+        <span>In Progress</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="width: 15px; height: 15px; background: #dc3545; border-radius: 3px;"></div>
+        <span>Needs Return Visit</span>
+    </div>
+
+</div>
+
     <h3>{{ year }} - {{ month }}</h3>
 
     <div style="margin-bottom: 10px;">
@@ -39,11 +58,19 @@
                     <strong>{{ day }}</strong>
 
                     {% for job in jobs_by_day.get(day, []) %}
-                        <div style="background:#e6f3ff; margin-top:5px; padding:3px; border-radius:4px;">
+
+                        <div class="
+                            {% if job.status == 'completed' %}job-completed
+                            {% elif job.status == 'in_progress' %}job-in-progress
+                            {% elif job.status == 'needs_return_visit' %}job-needs-return
+                            {% else %}job-default
+                            {% endif %}
+                        ">
                             <a href="{{ url_for('job_detail', job_id=job.id) }}">
                                 {{ job.customer_name }}
                             </a>
                         </div>
+
                     {% endfor %}
 
                 {% endif %}

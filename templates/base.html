@@ -92,6 +92,47 @@
             margin-top: 4px;
         }
 
+        /* 🔥 JOB STATUS COLORS */
+        .job-completed {
+            background-color: #28a745;
+            color: white;
+            margin-top: 5px;
+            padding: 3px;
+            border-radius: 4px;
+        }
+
+        .job-in-progress {
+            background-color: #ffc107;
+            color: black;
+            margin-top: 5px;
+            padding: 3px;
+            border-radius: 4px;
+        }
+
+        .job-needs-return {
+            background-color: #dc3545;
+            color: white;
+            margin-top: 5px;
+            padding: 3px;
+            border-radius: 4px;
+        }
+
+        .job-default {
+            background-color: #e6f3ff;
+            margin-top: 5px;
+            padding: 3px;
+            border-radius: 4px;
+        }
+
+        /* Fix link colors inside job boxes */
+        .job-completed a,
+        .job-in-progress a,
+        .job-needs-return a,
+        .job-default a {
+            color: inherit;
+            text-decoration: none;
+        }
+
         /* 🔥 MOBILE NAV FIX */
         @media (max-width: 768px) {
 
@@ -109,7 +150,7 @@
                 border-radius: 6px;
                 text-align: center;
                 border: 1px solid #ddd;
-                margin-right: 0; /* remove horizontal spacing */
+                margin-right: 0;
             }
 
             nav span {
@@ -119,26 +160,24 @@
             }
         }
 
-            /* 🔥 DESKTOP / MOBILE TOGGLE (FIXED) */
-            .desktop-only {
-                display: block !important;
-            }
+        /* 🔥 DESKTOP / MOBILE TOGGLE */
+        .desktop-only {
+            display: block !important;
+        }
 
-            .mobile-only {
+        .mobile-only {
+            display: none !important;
+        }
+
+        @media (max-width: 600px) {
+            .desktop-only {
                 display: none !important;
             }
 
-/* Only switch to mobile on VERY small screens */
-            @media (max-width: 600px) {
-                .desktop-only {
-                    display: none !important;
-                }
-
-                .mobile-only {
-                    display: block !important;
-                }
+            .mobile-only {
+                display: block !important;
             }
-
+        }
 
     </style>
 </head>
